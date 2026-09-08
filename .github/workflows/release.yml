@@ -1,0 +1,68 @@
+name: Publish npm package
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify and publish
+    if: ${{ !github.event.release.prerelease && !github.event.release.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@b0f76dfb45f55f8421693e4803ac7bb65143bd34 # v6
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Install trusted-publishing npm CLI
+        run: npm install --global npm@12.0.2
+      - name: Verify release tag
+        run: node scripts/verify-release-tag.mjs "${{ github.event.release.tag_name }}"
+      - name: Install exact dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Test source
+        run: |
+          pnpm test
+          pnpm typecheck
+          pnpm lint
+          pnpm format
+      - name: Build and verify exact release tarball
+        id: package
+        run: |
+          set -euo pipefail
+          mkdir release
+          pnpm pack --pack-destination release
+          mapfile -t webmcp_tarballs < <(find release -maxdepth 1 -type f -name '*.tgz' -print)
+          test "${#webmcp_tarballs[@]}" -eq 1
+          node scripts/verify-package.mjs "${webmcp_tarballs[0]}"
+          echo "tarball=${webmcp_tarballs[0]}" >> "$GITHUB_OUTPUT"
+      - name: Verify npm trusted-publishing runtime
+        run: |
+          set -euo pipefail
+          webmcp_npm_version="$(npm --version)"
+          webmcp_npm_major="${webmcp_npm_version%%.*}"
+          webmcp_npm_remainder="${webmcp_npm_version#*.}"
+          webmcp_npm_minor="${webmcp_npm_remainder%%.*}"
+          test "$webmcp_npm_major" -gt 11 \
+            || { test "$webmcp_npm_major" -eq 11 && test "$webmcp_npm_minor" -ge 5; }
+          echo "npm ${webmcp_npm_version} supports trusted publishing"
+      - name: Publish with npm trusted publishing
+        run: npm publish "${{ steps.package.outputs.tarball }}" --access public

@@ -1,0 +1,109 @@
+{
+  "name": "@mcp-host/webmcp",
+  "version": "0.1.0",
+  "description": "Framework-agnostic WebMCP registration and MCP Host delegation SDK",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "webmcp"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcp-host/webmcp.git"
+  },
+  "homepage": "https://github.com/mcp-host/webmcp#readme",
+  "bugs": {
+    "url": "https://github.com/mcp-host/webmcp/issues"
+  },
+  "files": [
+    "dist/**",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./index.ts",
+    "./browser": "./src/browser.ts",
+    "./server": "./src/server.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "browser": [
+        "src/browser.ts"
+      ],
+      "server": [
+        "src/server.ts"
+      ],
+      "*": [
+        "src/*"
+      ]
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf .turbo dist node_modules",
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "prepack": "pnpm build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify:package": "node scripts/verify-package.mjs"
+  },
+  "dependencies": {
+    "@cfworker/json-schema": "4.1.1",
+    "@modelcontextprotocol/client": "2.0.0",
+    "@modelcontextprotocol/core": "2.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.20.0",
+    "eslint": "9.28.0",
+    "prettier": "3.6.2",
+    "tsup": "8.4.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.24.1",
+    "vitest": "1.6.1"
+  },
+  "prettier": {
+    "arrowParens": "always",
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "useTabs": false
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./browser": {
+        "types": "./dist/browser.d.ts",
+        "import": "./dist/browser.js",
+        "default": "./dist/browser.js"
+      },
+      "./server": {
+        "types": "./dist/server.d.ts",
+        "import": "./dist/server.js",
+        "default": "./dist/server.js"
+      }
+    },
+    "typesVersions": {
+      "*": {
+        "browser": [
+          "dist/browser.d.ts"
+        ],
+        "server": [
+          "dist/server.d.ts"
+        ],
+        "*": [
+          "dist/index.d.ts"
+        ]
+      }
+    }
+  }
+}
