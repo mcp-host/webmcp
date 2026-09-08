@@ -65,4 +65,4 @@ jobs:
             || { test "$webmcp_npm_major" -eq 11 && test "$webmcp_npm_minor" -ge 5; }
           echo "npm ${webmcp_npm_version} supports trusted publishing"
       - name: Publish with npm trusted publishing
-        run: npm publish "${{ steps.package.outputs.tarball }}" --access public
+        run: npm publish "./${{ steps.package.outputs.tarball }}" --access public

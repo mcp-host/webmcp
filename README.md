@@ -1,10 +1,12 @@
 # `@mcp-host/webmcp`
 
-Framework-agnostic WebMCP integration for browser-local tools and MCP Host
-bundle tools. Browser code receives a public app identifier and a secret-free
-manifest. Protected calls always cross the application's authenticated,
-same-origin backend; the server-only gateway secret must never be included in
-browser bundles or public environment variables.
+Framework-agnostic WebMCP integration for browser-local tools and
+[MCP Host](https://mcp.host) bundle tools. Hosted calls run through the
+[mcp.link](https://mcp.link) gateway, while browser code receives only a public
+app identifier and secret-free manifest. Protected calls always cross the
+application's authenticated, same-origin backend; the server-only gateway
+secret must never be included in browser bundles or public environment
+variables.
 
 ```sh
 pnpm add @mcp-host/webmcp

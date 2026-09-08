@@ -1,6 +1,6 @@
 {
   "name": "@mcp-host/webmcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-agnostic WebMCP registration and MCP Host delegation SDK",
   "keywords": [
     "mcp",
