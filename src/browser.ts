@@ -22,7 +22,7 @@ type NativeWebMcpTool = {
   annotations?: WebMcpToolAnnotations;
   execute: (
     input: Record<string, unknown>,
-    options: { signal: AbortSignal },
+    options?: { signal?: AbortSignal },
   ) => Promise<unknown>;
 };
 
@@ -308,7 +308,9 @@ function toLocalNativeTool(tool: WebMcpLocalTool): NativeWebMcpTool {
     ...tool,
     execute: async (argumentsValue, options) => {
       validateArguments(tool.inputSchema, argumentsValue);
-      const result = await tool.execute(argumentsValue, options);
+      const result = await tool.execute(argumentsValue, {
+        signal: options?.signal ?? new AbortController().signal,
+      });
       assertJsonSerializable(result);
       return result;
     },
@@ -326,8 +328,9 @@ function toHostedNativeTool(
     description: tool.description,
     inputSchema: tool.inputSchema,
     ...(tool.annotations ? { annotations: tool.annotations } : {}),
-    execute: async (argumentsValue, { signal }) => {
+    execute: async (argumentsValue, options) => {
       validateArguments(tool.inputSchema, argumentsValue);
+      const signal = options?.signal ?? new AbortController().signal;
       const result = await executor({
         appId,
         toolId: tool.id,

@@ -12,7 +12,7 @@ type RegisteredTool = {
   };
   execute: (
     input: Record<string, unknown>,
-    options: { signal: AbortSignal },
+    options?: { signal?: AbortSignal },
   ) => Promise<unknown>;
 };
 
@@ -313,6 +313,71 @@ describe('WebMCP browser SDK', () => {
     hostedController.abort(reason);
     await expect(hostedCall).rejects.toBe(reason);
     expect(invocationSignal).toBe(hostedController.signal);
+  });
+
+  it('supplies a fallback signal when the native runtime omits execute options', async () => {
+    const registered = new Map<string, RegisteredTool>();
+    const modelContext = {
+      registerTool: vi.fn(async (tool: RegisteredTool) => {
+        registered.set(tool.name, tool);
+      }),
+    };
+    vi.stubGlobal('document', { modelContext });
+    vi.stubGlobal('location', { origin: 'https://shop.example' });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (resource: RequestInfo | URL) => {
+        if (String(resource).includes('/manifest')) {
+          return Response.json({
+            manifestVersion: 1,
+            appId: 'wmapp_shop',
+            status: 'active',
+            configurationVersion: 1,
+            catalogFingerprint: 'f'.repeat(64),
+            endpoint: 'https://mcp.link/u/user/my-tools/mcp',
+            origins: ['https://shop.example'],
+            tools: [
+              {
+                id: 'tool_inventory',
+                name: 'inventory_lookup.123456789abc',
+                mcpName: 'inventory::lookup',
+                description: 'Look up current inventory.',
+                inputSchema: { type: 'object' },
+              },
+            ],
+          });
+        }
+        return Response.json({ result: { available: 4 } });
+      }),
+    );
+
+    const app = await createWebMcpApp({
+      appId: 'wmapp_shop',
+      manifestUrl: 'https://mcp.host/manifest',
+    });
+    let localSignal: AbortSignal | undefined;
+    await app.registerLocalTool({
+      name: 'observe_fallback_signal',
+      description: 'Observe the fallback cancellation signal.',
+      execute: async (_arguments, { signal }) => {
+        localSignal = signal;
+        return { ok: true };
+      },
+    });
+    await app.registerHostedTools({
+      executor: createSameOriginExecutor({
+        endpoint: '/api/webmcp/invoke',
+      }),
+    });
+
+    await expect(
+      registered.get('observe_fallback_signal')!.execute({}),
+    ).resolves.toEqual({ ok: true });
+    expect(localSignal).toBeInstanceOf(AbortSignal);
+    await expect(
+      registered.get('inventory_lookup.123456789abc')!.execute({}),
+    ).resolves.toEqual({ available: 4 });
   });
 
   it('aborts and rejects registration when disposed while the native call is pending', async () => {
